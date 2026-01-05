@@ -1,0 +1,25 @@
+{
+    "name": "Coco Keys",
+    "short_name": "Coco Keys",
+    "description": "Tap the tiles to play piano - a rhythm game for all ages",
+    "start_url": "https://safemagic45.github.io/coco-keys/index.html",
+    "scope": "https://safemagic45.github.io/coco-keys/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0a0f",
+    "theme_color": "#0a0a0f",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
