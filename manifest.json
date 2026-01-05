@@ -2,7 +2,7 @@
     "name": "Coco Keys",
     "short_name": "Coco Keys",
     "description": "Tap the tiles to play piano - a rhythm game for all ages",
-    "start_url": "/index.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0a0a0f",
