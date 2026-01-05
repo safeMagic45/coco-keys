@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Coco Keys">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Coco Keys</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-gradient: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            --neon-cyan: #00f5ff;
+            --neon-pink: #ff00aa;
+            --neon-purple: #9d00ff;
+            --neon-green: #00ff88;
+            --neon-yellow: #ffee00;
+            --lane-1: #ff00aa;
+            --lane-2: #00f5ff;
+            --lane-3: #9d00ff;
+            --lane-4: #00ff88;
+            --white: #ffffff;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--white);
+            touch-action: manipulation;
+        }
+        
+        body {
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        #menu-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            padding-top: calc(20px + var(--safe-top));
+        }
+        
+        #menu-screen.hidden { display: none; }
+        
+        .menu-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes titlePulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+        
+        .menu-subtitle {
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 40px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        
+        .song-list {
+            width: 100%;
+            max-width: 500px;
+            max-height: 50vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px;
+        }
+        
+        .song-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+        
+        .song-card.tapped {
+            transform: scale(0.97);
+            background: linear-gradient(135deg, rgba(0,245,255,0.15) 0%, rgba(255,0,170,0.1) 100%);
+        }
+        
+        .song-card-content { pointer-events: none; }
+        
+        .song-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .song-composer {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+        
+        .song-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+        }
+        
+        .difficulty {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .difficulty.easy { background: rgba(0, 255, 136, 0.2); color: var(--neon-green); border: 1px solid var(--neon-green); }
+        .difficulty.medium { background: rgba(255, 238, 0, 0.2); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
+        .difficulty.hard { background: rgba(255, 0, 170, 0.2); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+        
+        .bpm { color: rgba(255, 255, 255, 0.4); }
+        .high-score { color: var(--neon-cyan); font-weight: 700; }
+        
+        #game-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: none;
+            flex-direction: column;
+        }
+        
+        #game-screen.active { display: flex; }
+        
+        .game-header {
+            height: 80px;
+            padding: 15px 20px;
+            padding-top: calc(15px + var(--safe-top));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .score-display {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+        }
+        
+        .combo-display {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--neon-pink);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .combo-display.active { opacity: 1; }
+        
+        .pause-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        
+        .game-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lanes-container {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+        
+        .lane {
+            flex: 1;
+            position: relative;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .lane:last-child { border-right: none; }
+        
+        .lane-glow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        
+        .lane:nth-child(1) .lane-glow { background: linear-gradient(to top, rgba(255, 0, 170, 0.5), transparent); }
+        .lane:nth-child(2) .lane-glow { background: linear-gradient(to top, rgba(0, 245, 255, 0.5), transparent); }
+        .lane:nth-child(3) .lane-glow { background: linear-gradient(to top, rgba(157, 0, 255, 0.5), transparent); }
+        .lane:nth-child(4) .lane-glow { background: linear-gradient(to top, rgba(0, 255, 136, 0.5), transparent); }
+        
+        .lane.hit .lane-glow { opacity: 1; }
+        
+        .hit-line {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--lane-1), var(--lane-2), var(--lane-3), var(--lane-4));
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .hit-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.08), transparent);
+            display: flex;
+            z-index: 10;
+            touch-action: manipulation;
+        }
+        
+        .hit-zone-lane {
+            flex: 1;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .hit-zone-lane:last-child { border-right: none; }
+        
+        .tile {
+            position: absolute;
+            left: 3px;
+            right: 3px;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        
+        .tile.lane-0 { background: linear-gradient(180deg, var(--lane-1), #cc0088); box-shadow: 0 0 20px rgba(255, 0, 170, 0.6); }
+        .tile.lane-1 { background: linear-gradient(180deg, var(--lane-2), #00bbcc); box-shadow: 0 0 20px rgba(0, 245, 255, 0.6); }
+        .tile.lane-2 { background: linear-gradient(180deg, var(--lane-3), #7700cc); box-shadow: 0 0 20px rgba(157, 0, 255, 0.6); }
+        .tile.lane-3 { background: linear-gradient(180deg, var(--lane-4), #00cc66); box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+        
+        .tile.hit { animation: tileHit 0.3s ease-out forwards; }
+        
+        @keyframes tileHit {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(0.5); opacity: 0; }
+        }
+        
+        .tile.missed {
+            background: #ff3333 !important;
+            box-shadow: 0 0 30px rgba(255, 51, 51, 0.8) !important;
+        }
+        
+        #pause-overlay, #gameover-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        
+        #pause-overlay.active, #gameover-overlay.active { display: flex; }
+        #gameover-overlay { z-index: 60; }
+        
+        .pause-title { font-family: 'Orbitron', monospace; font-size: 3rem; margin-bottom: 40px; color: var(--neon-cyan); }
+        .gameover-title { font-family: 'Orbitron', monospace; font-size: 2.5rem; color: var(--neon-pink); margin-bottom: 10px; }
+        .final-score { font-family: 'Orbitron', monospace; font-size: 4rem; font-weight: 900; color: var(--neon-cyan); margin-bottom: 10px; }
+        .score-label { font-size: 1.2rem; color: rgba(255, 255, 255, 0.5); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 3px; }
+        .stats-row { display: flex; gap: 40px; margin-bottom: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-family: 'Orbitron', monospace; font-size: 2rem; font-weight: 700; color: var(--neon-green); }
+        .stat-label { font-size: 0.9rem; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; }
+        .new-record { font-family: 'Orbitron', monospace; font-size: 1.5rem; color: var(--neon-yellow); margin-bottom: 20px; animation: recordPulse 0.5s ease-in-out infinite alternate; }
+        @keyframes recordPulse { from { opacity: 0.7; transform: scale(1); } to { opacity: 1; transform: scale(1.05); } }
+        .pause-btn-group { display: flex; flex-direction: column; gap: 15px; }
+        .menu-button { font-family: 'Orbitron', monospace; font-size: 1.2rem; padding: 18px 50px; border-radius: 30px; border: 2px solid; background: transparent; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 2px; touch-action: manipulation; }
+        .menu-button.primary { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .menu-button.primary:active { background: var(--neon-cyan); color: var(--bg-dark); }
+        .menu-button.secondary { border-color: var(--neon-pink); color: var(--neon-pink); }
+        .menu-button.secondary:active { background: var(--neon-pink); color: var(--bg-dark); }
+        #countdown { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 70; background: rgba(10, 10, 15, 0.8); }
+        #countdown.active { display: flex; }
+        .countdown-number { font-family: 'Orbitron', monospace; font-size: 10rem; font-weight: 900; color: var(--neon-cyan); text-shadow: 0 0 60px rgba(0, 245, 255, 0.8); animation: countPop 0.5s ease-out; }
+        @keyframes countPop { 0% { transform: scale(2); opacity: 0; } 50% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+        .song-list::-webkit-scrollbar { width: 6px; }
+        .song-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+        .song-list::-webkit-scrollbar-thumb { background: rgba(0, 245, 255, 0.3); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="menu-screen">
+        <h1 class="menu-title">COCO KEYS</h1>
+        <p class="menu-subtitle">Tap to the Beat</p>
+        <div class="song-list" id="song-list"></div>
+    </div>
+    
+    <div id="game-screen">
+        <div class="game-header">
+            <div>
+                <div class="score-display" id="score">0</div>
+                <div class="combo-display" id="combo">COMBO x1</div>
+            </div>
+            <button class="pause-btn" id="pause-btn">❚❚</button>
+        </div>
+        <div class="game-area" id="game-area">
+            <div class="lanes-container" id="lanes-container">
+                <div class="lane" data-lane="0"><div class="lane-glow"></div></div>
+                <div class="lane" data-lane="1"><div class="lane-glow"></div></div>
+                <div class="lane" data-lane="2"><div class="lane-glow"></div></div>
+                <div class="lane" data-lane="3"><div class="lane-glow"></div></div>
+            </div>
+            <div class="hit-line"></div>
+            <div class="hit-zone" id="hit-zone">
+                <div class="hit-zone-lane"></div>
+                <div class="hit-zone-lane"></div>
+                <div class="hit-zone-lane"></div>
+                <div class="hit-zone-lane"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="pause-overlay">
+        <h2 class="pause-title">PAUSED</h2>
+        <div class="pause-btn-group">
+            <button class="menu-button primary" id="resume-btn">RESUME</button>
+            <button class="menu-button secondary" id="quit-btn">QUIT</button>
+        </div>
+    </div>
+    
+    <div id="gameover-overlay">
+        <h2 class="gameover-title">GAME OVER</h2>
+        <div class="final-score" id="final-score">0</div>
+        <div class="score-label">FINAL SCORE</div>
+        <div class="new-record" id="new-record" style="display: none;">★ NEW RECORD ★</div>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="tiles-hit">0</div>
+                <div class="stat-label">Tiles Hit</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="max-combo">0</div>
+                <div class="stat-label">Max Combo</div>
+            </div>
+        </div>
+        <div class="pause-btn-group">
+            <button class="menu-button primary" id="retry-btn">RETRY</button>
+            <button class="menu-button secondary" id="menu-btn">MENU</button>
+        </div>
+    </div>
+    
+    <div id="countdown">
+        <div class="countdown-number" id="countdown-number">3</div>
+    </div>
+
+    <script>
+        // ==================== MUSIC ENGINE ====================
+        const MusicEngine = {
+            ctx: null,
+            masterGain: null,
+            bgGain: null,
+            melodyGain: null,
+            initialized: false,
+            bgInterval: null,
+            currentBeat: 0,
+            startTime: 0,
+            bpm: 120,
+            
+            noteFreqs: {
+                'C2': 65.41, 'D2': 73.42, 'E2': 82.41, 'F2': 87.31, 'G2': 98.00, 'A2': 110.00, 'B2': 123.47,
+                'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
+                'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
+                'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'A5': 880.00, 'B5': 987.77,
+                'C6': 1046.50
+            },
+            
+            init() {
+                if (this.initialized && this.ctx) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 1.0;
+                    this.masterGain.connect(this.ctx.destination);
+                    
+                    this.bgGain = this.ctx.createGain();
+                    this.bgGain.gain.value = 0.25;
+                    this.bgGain.connect(this.masterGain);
+                    
+                    this.melodyGain = this.ctx.createGain();
+                    this.melodyGain.gain.value = 0.5;
+                    this.melodyGain.connect(this.masterGain);
+                    
+                    this.initialized = true;
+                } catch(e) { console.log('Audio not available'); }
+            },
+            
+            resume() {
+                if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            
+            playNote(freq, duration, gainNode, time) {
+                if (!this.ctx) return;
+                const now = time || this.ctx.currentTime;
+                
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+                
+                osc1.type = 'triangle';
+                osc1.frequency.value = freq;
+                osc2.type = 'sine';
+                osc2.frequency.value = freq * 2;
+                
+                oscGain.gain.setValueAtTime(0, now);
+                oscGain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+                
+                osc1.connect(oscGain);
+                osc2.connect(oscGain);
+                oscGain.connect(gainNode);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + duration);
+                osc2.stop(now + duration);
+            },
+            
+            playBass(freq, duration, time) {
+                if (!this.ctx) return;
+                const now = time || this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                
+                oscGain.gain.setValueAtTime(0, now);
+                oscGain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+                
+                osc.connect(oscGain);
+                oscGain.connect(this.bgGain);
+                
+                osc.start(now);
+                osc.stop(now + duration);
+            },
+            
+            playChord(notes, duration, time) {
+                if (!this.ctx) return;
+                notes.forEach(note => {
+                    const freq = this.noteFreqs[note];
+                    if (freq) this.playNote(freq, duration, this.bgGain, time);
+                });
+            },
+            
+            playMelody(noteIndex) {
+                if (!this.ctx) return;
+                this.resume();
+                
+                const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
+                const freq = this.noteFreqs[notes[noteIndex % notes.length]];
+                this.playNote(freq, 0.5, this.melodyGain);
+            },
+            
+            startBackgroundMusic(song) {
+                if (!this.ctx) return;
+                this.resume();
+                this.stopBackgroundMusic();
+                
+                this.bpm = song.bpm;
+                this.startTime = this.ctx.currentTime;
+                this.currentBeat = 0;
+                
+                const beatDuration = 60 / this.bpm;
+                const chords = song.chords || [
+                    { notes: ['C3', 'E3', 'G3'], bass: 'C2' },
+                    { notes: ['G3', 'B3', 'D4'], bass: 'G2' },
+                    { notes: ['A3', 'C4', 'E4'], bass: 'A2' },
+                    { notes: ['F3', 'A3', 'C4'], bass: 'F2' }
+                ];
+                
+                const scheduleAhead = () => {
+                    if (!this.ctx) return;
+                    const currentTime = this.ctx.currentTime;
+                    const scheduleTime = currentTime + 0.5;
+                    
+                    while (this.startTime + (this.currentBeat * beatDuration) < scheduleTime) {
+                        const beatTime = this.startTime + (this.currentBeat * beatDuration);
+                        
+                        if (beatTime > currentTime) {
+                            const chordIndex = Math.floor(this.currentBeat / 4) % chords.length;
+                            const chord = chords[chordIndex];
+                            
+                            if (this.currentBeat % 2 === 0) {
+                                const bassFreq = this.noteFreqs[chord.bass] || 65.41;
+                                this.playBass(bassFreq, beatDuration * 1.5, beatTime);
+                            }
+                            
+                            this.playChord(chord.notes, beatDuration * 0.7, beatTime);
+                        }
+                        this.currentBeat++;
+                    }
+                };
+                
+                scheduleAhead();
+                this.bgInterval = setInterval(scheduleAhead, 200);
+            },
+            
+            stopBackgroundMusic() {
+                if (this.bgInterval) { clearInterval(this.bgInterval); this.bgInterval = null; }
+            },
+            
+            playMiss() {
+                if (!this.ctx) return;
+                this.resume();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        };
+        
+        // ==================== SONG DATA ====================
+        const SONGS = [
+            {
+                id: 'twinkle', name: 'Twinkle Twinkle', composer: 'Traditional', difficulty: 'easy', bpm: 90,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['F3', 'A3', 'C4'], bass: 'F2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['C3', 'E3', 'G3'], bass: 'C2' }],
+                notes: [[0,0,0],[0,1,0],[2,2,4],[2,3,4],[3,4,5],[3,5,5],[2,6,4],[1,8,3],[1,9,3],[0,10,2],[0,11,2],[3,12,1],[3,13,1],[2,14,0],[2,16,4],[2,17,4],[1,18,3],[1,19,3],[0,20,2],[0,21,2],[3,22,1],[2,24,4],[2,25,4],[1,26,3],[1,27,3],[0,28,2],[0,29,2],[3,30,1],[0,32,0],[0,33,0],[2,34,4],[2,35,4],[3,36,5],[3,37,5],[2,38,4]]
+            },
+            {
+                id: 'ode_to_joy', name: 'Ode to Joy', composer: 'Beethoven', difficulty: 'easy', bpm: 100,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }],
+                notes: [[1,0,4],[1,1,4],[2,2,5],[3,3,6],[3,4,6],[2,5,5],[1,6,4],[0,7,3],[0,8,2],[0,9,2],[1,10,3],[1,11,4],[1,12,4],[0,13.5,3],[0,14,3],[1,16,4],[1,17,4],[2,18,5],[3,19,6],[3,20,6],[2,21,5],[1,22,4],[0,23,3],[0,24,2],[0,25,2],[1,26,3],[1,27,4],[0,28,3],[0,29.5,2],[0,30,2]]
+            },
+            {
+                id: 'mary_lamb', name: 'Mary Had a Little Lamb', composer: 'Traditional', difficulty: 'easy', bpm: 95,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }],
+                notes: [[2,0,4],[1,1,3],[0,2,2],[1,3,3],[2,4,4],[2,5,4],[2,6,4],[1,8,3],[1,9,3],[1,10,3],[2,12,4],[3,13,6],[3,14,6],[2,16,4],[1,17,3],[0,18,2],[1,19,3],[2,20,4],[2,21,4],[2,22,4],[2,23,4],[1,24,3],[1,25,3],[2,26,4],[1,27,3],[0,28,2]]
+            },
+            {
+                id: 'jingle_bells', name: 'Jingle Bells', composer: 'Traditional', difficulty: 'easy', bpm: 110,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['F3', 'A3', 'C4'], bass: 'F2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['C3', 'E3', 'G3'], bass: 'C2' }],
+                notes: [[2,0,4],[2,1,4],[2,2,4],[2,4,4],[2,5,4],[2,6,4],[2,8,4],[3,9,6],[0,10,0],[1,11,2],[2,12,4],[1,14,3],[1,15,3],[1,16,3],[1,17,3],[1,18,3],[2,19,4],[2,20,4],[2,21,4],[2,22,4],[1,23,2],[1,24,2],[3,25,6],[3,26,6],[1,27,2],[0,28,0]]
+            },
+            {
+                id: 'fur_elise', name: 'Für Elise', composer: 'Beethoven', difficulty: 'medium', bpm: 115,
+                chords: [{ notes: ['A3', 'C4', 'E4'], bass: 'A2' }, { notes: ['E3', 'G3', 'B3'], bass: 'E2' }, { notes: ['A3', 'C4', 'E4'], bass: 'A2' }, { notes: ['E3', 'G3', 'B3'], bass: 'E2' }],
+                notes: [[3,0,9],[2,0.5,8],[3,1,9],[2,1.5,8],[3,2,9],[1,2.5,6],[2,3,8],[0,3.5,5],[0,4,4],[0,5,0],[1,5.5,2],[0,6,4],[1,6.5,6],[2,7,8],[1,8,4],[2,8.5,7],[1,9,6],[2,9.5,8],[3,10,9],[2,10.5,8],[3,11,9],[2,11.5,8],[3,12,9],[1,12.5,6],[2,13,8],[0,13.5,5],[0,14,4]]
+            },
+            {
+                id: 'canon', name: 'Canon in D', composer: 'Pachelbel', difficulty: 'medium', bpm: 72,
+                chords: [{ notes: ['D3', 'F3', 'A3'], bass: 'D2' }, { notes: ['A3', 'C4', 'E4'], bass: 'A2' }, { notes: ['B3', 'D4', 'F4'], bass: 'B2' }, { notes: ['F3', 'A3', 'C4'], bass: 'F2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['D3', 'F3', 'A3'], bass: 'D2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['A3', 'C4', 'E4'], bass: 'A2' }],
+                notes: [[3,0,11],[2,2,9],[1,4,7],[0,6,4],[0,8,2],[1,10,4],[2,12,7],[3,14,9],[3,16,11],[3,18,11],[2,20,9],[2,22,9],[1,24,7],[1,26,7],[0,28,4],[0,30,4]]
+            },
+            {
+                id: 'entertainer', name: 'The Entertainer', composer: 'Scott Joplin', difficulty: 'hard', bpm: 130,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['G3', 'B3', 'D4'], bass: 'G2' }, { notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['F3', 'A3', 'C4'], bass: 'F2' }],
+                notes: [[2,0,3],[3,0.5,4],[2,1,3],[3,1.5,4],[2,2,3],[1,2.5,0],[0,3,2],[1,3.5,3],[2,4,4],[1,5,3],[0,6,2],[1,6.5,3],[2,7,4],[3,7.5,7],[3,8,6],[2,8.5,4],[1,9,3],[2,9.5,4],[3,10,6],[2,10.5,4],[1,11,3],[0,11.5,2],[0,12,0],[2,13,3],[3,13.5,4],[2,14,3],[3,14.5,4],[2,15,3],[1,15.5,0],[0,16,2]]
+            },
+            {
+                id: 'moonlight', name: 'Moonlight Sonata', composer: 'Beethoven', difficulty: 'hard', bpm: 120,
+                chords: [{ notes: ['C3', 'E3', 'G3'], bass: 'C2' }, { notes: ['C3', 'E3', 'A3'], bass: 'A2' }, { notes: ['D3', 'F3', 'B3'], bass: 'B2' }, { notes: ['E3', 'G3', 'B3'], bass: 'E2' }],
+                notes: [[0,0,0],[1,0.33,4],[2,0.66,7],[0,1,0],[1,1.33,4],[2,1.66,7],[0,2,0],[1,2.33,4],[2,2.66,7],[0,3,0],[1,3.33,4],[2,3.66,7],[3,4,8],[1,4.33,4],[2,4.66,7],[3,5,9],[1,5.33,4],[2,5.66,7],[3,6,8],[1,6.33,4],[2,6.66,7],[0,7,0],[1,7.33,4],[2,7.66,7]]
+            }
+        ];
+        
+        // ==================== GAME STATE ====================
+        const Game = {
+            currentSong: null, tiles: [], score: 0, combo: 0, maxCombo: 0, tilesHit: 0,
+            isPlaying: false, isPaused: false, gameOver: false, startTime: 0,
+            tileSpeed: 300, tileHeight: 90, hitZoneTop: 0, hitZoneBottom: 0,
+            nextTileIndex: 0, lastFrameTime: 0, animationId: null, highScores: {}, els: {}
+        };
+        
+        function addTapHandler(el, cb) {
+            let startY = 0, startTime = 0;
+            el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; startTime = Date.now(); }, { passive: true });
+            el.addEventListener('touchend', e => {
+                if (Math.abs(e.changedTouches[0].clientY - startY) < 30 && Date.now() - startTime < 300) { e.preventDefault(); cb(e); }
+            }, { passive: false });
+            el.addEventListener('click', cb);
+        }
+        
+        function init() {
+            Game.els = {
+                menuScreen: document.getElementById('menu-screen'),
+                gameScreen: document.getElementById('game-screen'),
+                pauseOverlay: document.getElementById('pause-overlay'),
+                gameoverOverlay: document.getElementById('gameover-overlay'),
+                countdown: document.getElementById('countdown'),
+                countdownNumber: document.getElementById('countdown-number'),
+                scoreDisplay: document.getElementById('score'),
+                comboDisplay: document.getElementById('combo'),
+                finalScore: document.getElementById('final-score'),
+                tilesHitDisplay: document.getElementById('tiles-hit'),
+                maxComboDisplay: document.getElementById('max-combo'),
+                newRecord: document.getElementById('new-record'),
+                gameArea: document.getElementById('game-area'),
+                lanesContainer: document.getElementById('lanes-container'),
+                hitZone: document.getElementById('hit-zone'),
+                lanes: document.querySelectorAll('.lane'),
+                songList: document.getElementById('song-list')
+            };
+            
+            try { Game.highScores = JSON.parse(localStorage.getItem('cocoKeysHighScores') || '{}'); } catch(e) { Game.highScores = {}; }
+            renderSongList();
+            
+            Game.els.hitZone.addEventListener('touchstart', handleHitZone, { passive: false });
+            Game.els.hitZone.addEventListener('mousedown', handleHitZone);
+            addTapHandler(document.getElementById('pause-btn'), togglePause);
+            addTapHandler(document.getElementById('resume-btn'), togglePause);
+            addTapHandler(document.getElementById('quit-btn'), quitGame);
+            addTapHandler(document.getElementById('retry-btn'), retryGame);
+            addTapHandler(document.getElementById('menu-btn'), quitGame);
+            document.body.addEventListener('touchmove', e => { if (Game.isPlaying) e.preventDefault(); }, { passive: false });
+        }
+        
+        function renderSongList() {
+            Game.els.songList.innerHTML = SONGS.map(s => `
+                <div class="song-card" data-song-id="${s.id}">
+                    <div class="song-card-content">
+                        <div class="song-name">${s.name}</div>
+                        <div class="song-composer">${s.composer}</div>
+                        <div class="song-meta">
+                            <span class="difficulty ${s.difficulty}">${s.difficulty}</span>
+                            <span class="bpm">${s.bpm} BPM</span>
+                            ${Game.highScores[s.id] ? `<span class="high-score">★ ${Game.highScores[s.id]}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.song-card').forEach(card => {
+                addTapHandler(card, () => { card.classList.add('tapped'); setTimeout(() => card.classList.remove('tapped'), 150); startGame(card.dataset.songId); });
+            });
+        }
+        
+        async function startGame(songId) {
+            MusicEngine.init();
+            Game.currentSong = SONGS.find(s => s.id === songId);
+            if (!Game.currentSong) return;
+            
+            Object.assign(Game, { score: 0, combo: 0, maxCombo: 0, tilesHit: 0, tiles: [], nextTileIndex: 0, gameOver: false, isPaused: false });
+            Game.tileSpeed = (Game.currentSong.bpm / 60) * 150;
+            
+            Game.els.menuScreen.classList.add('hidden');
+            Game.els.gameScreen.classList.add('active');
+            
+            await delay(50);
+            const rect = Game.els.gameArea.getBoundingClientRect();
+            Game.hitZoneTop = rect.height - 150;
+            Game.hitZoneBottom = rect.height;
+            if (Game.hitZoneBottom < 200) { Game.hitZoneBottom = window.innerHeight - 80; Game.hitZoneTop = Game.hitZoneBottom - 150; }
+            
+            updateScore(); updateCombo();
+            Game.els.lanesContainer.querySelectorAll('.tile').forEach(t => t.remove());
+            
+            await showCountdown();
+            
+            const finalRect = Game.els.gameArea.getBoundingClientRect();
+            if (finalRect.height > 200) { Game.hitZoneTop = finalRect.height - 150; Game.hitZoneBottom = finalRect.height; }
+            
+            MusicEngine.startBackgroundMusic(Game.currentSong);
+            Game.isPlaying = true;
+            Game.startTime = performance.now();
+            Game.lastFrameTime = Game.startTime;
+            gameLoop();
+        }
+        
+        async function showCountdown() {
+            Game.els.countdown.classList.add('active');
+            for (let i = 3; i >= 1; i--) {
+                Game.els.countdownNumber.textContent = i;
+                Game.els.countdownNumber.style.animation = 'none';
+                Game.els.countdownNumber.offsetHeight;
+                Game.els.countdownNumber.style.animation = 'countPop 0.5s ease-out';
+                await delay(700);
+            }
+            Game.els.countdownNumber.textContent = 'GO!';
+            Game.els.countdownNumber.style.color = 'var(--neon-green)';
+            await delay(500);
+            Game.els.countdown.classList.remove('active');
+            Game.els.countdownNumber.style.color = 'var(--neon-cyan)';
+        }
+        
+        function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+        
+        function gameLoop() {
+            if (!Game.isPlaying || Game.gameOver) return;
+            if (Game.isPaused) { Game.animationId = requestAnimationFrame(gameLoop); return; }
+            
+            const now = performance.now();
+            const dt = (now - Game.lastFrameTime) / 1000;
+            Game.lastFrameTime = now;
+            const elapsed = (now - Game.startTime) / 1000;
+            const beatTime = Game.currentSong.bpm / 60;
+            
+            spawnTiles(elapsed, beatTime);
+            updateTiles(dt);
+            checkMissedTiles();
+            
+            if (Game.nextTileIndex >= Game.currentSong.notes.length && Game.tiles.length === 0) { endGame(true); return; }
+            Game.animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function spawnTiles(elapsed, beatTime) {
+            const spawnY = -Game.tileHeight;
+            const timeToHit = (Game.hitZoneTop - spawnY) / Game.tileSpeed;
+            
+            while (Game.nextTileIndex < Game.currentSong.notes.length) {
+                const note = Game.currentSong.notes[Game.nextTileIndex];
+                const noteTime = note[1] / beatTime;
+                if (elapsed >= noteTime - timeToHit) {
+                    Game.tiles.push({ id: Game.nextTileIndex, lane: note[0], noteIndex: note[2], y: spawnY, hit: false, missed: false, element: createTile(note[0]) });
+                    Game.nextTileIndex++;
+                } else break;
+            }
+        }
+        
+        function createTile(lane) {
+            const tile = document.createElement('div');
+            tile.className = `tile lane-${lane}`;
+            tile.style.height = `${Game.tileHeight}px`;
+            Game.els.lanes[lane].appendChild(tile);
+            return tile;
+        }
+        
+        function updateTiles(dt) {
+            const move = Game.tileSpeed * dt;
+            Game.tiles.forEach(t => { if (!t.hit && !t.missed) { t.y += move; t.element.style.top = `${t.y}px`; } });
+        }
+        
+        function checkMissedTiles() {
+            Game.tiles.forEach(t => { if (!t.hit && !t.missed && t.y > Game.hitZoneBottom + 30) missTile(t); });
+        }
+        
+        function handleHitZone(e) {
+            if (!Game.isPlaying || Game.isPaused || Game.gameOver) return;
+            e.preventDefault();
+            MusicEngine.resume();
+            const touches = e.touches ? Array.from(e.touches) : [e];
+            touches.forEach(touch => {
+                const x = touch.clientX || touch.pageX;
+                const rect = Game.els.hitZone.getBoundingClientRect();
+                const lane = Math.floor((x - rect.left) / (rect.width / 4));
+                if (lane >= 0 && lane < 4) tryHitTile(lane);
+            });
+        }
+        
+        function tryHitTile(lane) {
+            const hitTile = Game.tiles
+                .filter(t => t.lane === lane && !t.hit && !t.missed)
+                .filter(t => t.y + Game.tileHeight > Game.hitZoneTop - 80 && t.y < Game.hitZoneBottom + 30)
+                .sort((a, b) => b.y - a.y)[0];
+            
+            if (hitTile) {
+                hitTile.hit = true;
+                hitTile.element.classList.add('hit');
+                MusicEngine.playMelody(hitTile.noteIndex);
+                Game.combo++;
+                Game.maxCombo = Math.max(Game.maxCombo, Game.combo);
+                Game.tilesHit++;
+                Game.score += Math.floor(100 * Math.min(1 + Math.floor(Game.combo / 10) * 0.5, 3));
+                updateScore(); updateCombo();
+                setTimeout(() => { hitTile.element.remove(); const idx = Game.tiles.indexOf(hitTile); if (idx > -1) Game.tiles.splice(idx, 1); }, 300);
+            }
+            
+            Game.els.lanes[lane].classList.add('hit');
+            setTimeout(() => Game.els.lanes[lane].classList.remove('hit'), 100);
+        }
+        
+        function missTile(tile) {
+            tile.missed = true;
+            tile.element.classList.add('missed');
+            MusicEngine.playMiss();
+            Game.combo = 0;
+            updateCombo();
+            endGame(false);
+        }
+        
+        function updateScore() { Game.els.scoreDisplay.textContent = Game.score; }
+        function updateCombo() {
+            if (Game.combo > 1) { Game.els.comboDisplay.textContent = `COMBO x${Game.combo}`; Game.els.comboDisplay.classList.add('active'); }
+            else { Game.els.comboDisplay.classList.remove('active'); }
+        }
+        
+        function togglePause() { Game.isPaused = !Game.isPaused; Game.els.pauseOverlay.classList.toggle('active', Game.isPaused); if (!Game.isPaused) Game.lastFrameTime = performance.now(); }
+        
+        function endGame(completed) {
+            Game.isPlaying = false;
+            Game.gameOver = true;
+            MusicEngine.stopBackgroundMusic();
+            if (Game.animationId) cancelAnimationFrame(Game.animationId);
+            
+            const isNew = Game.score > (Game.highScores[Game.currentSong.id] || 0);
+            if (isNew) { Game.highScores[Game.currentSong.id] = Game.score; try { localStorage.setItem('cocoKeysHighScores', JSON.stringify(Game.highScores)); } catch(e) {} }
+            
+            Game.els.finalScore.textContent = Game.score;
+            Game.els.tilesHitDisplay.textContent = Game.tilesHit;
+            Game.els.maxComboDisplay.textContent = Game.maxCombo;
+            Game.els.newRecord.style.display = isNew ? 'block' : 'none';
+            setTimeout(() => Game.els.gameoverOverlay.classList.add('active'), 500);
+        }
+        
+        function retryGame() { Game.els.gameoverOverlay.classList.remove('active'); Game.els.lanesContainer.querySelectorAll('.tile').forEach(t => t.remove()); startGame(Game.currentSong.id); }
+        
+        function quitGame() {
+            Game.isPlaying = false; Game.gameOver = true;
+            MusicEngine.stopBackgroundMusic();
+            if (Game.animationId) cancelAnimationFrame(Game.animationId);
+            Game.els.gameScreen.classList.remove('active');
+            Game.els.pauseOverlay.classList.remove('active');
+            Game.els.gameoverOverlay.classList.remove('active');
+            Game.els.menuScreen.classList.remove('hidden');
+            Game.els.lanesContainer.querySelectorAll('.tile').forEach(t => t.remove());
+            renderSongList();
+        }
+        
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    </script>
+</body>
+</html>
